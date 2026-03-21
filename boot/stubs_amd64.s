@@ -11,6 +11,26 @@ github_0com_1dmarro89_1go_x2dos_x2dtutorial_1shell.outb:
 	ret
 .size github_0com_1dmarro89_1go_x2dos_x2dtutorial_1shell.outb, . - github_0com_1dmarro89_1go_x2dos_x2dtutorial_1shell.outb
 
+.global github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.inb
+.type   github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.inb, @function
+
+github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.inb:
+	movw %di, %dx
+	xor %eax, %eax
+	inb %dx, %al
+	ret
+.size github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.inb, . - github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.inb
+
+.global github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.outb
+.type   github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.outb, @function
+
+github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.outb:
+	movw %di, %dx
+	movb %sil, %al
+	outb %al, %dx
+	ret
+.size github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.outb, . - github_0com_1dmarro89_1go_x2dos_x2dtutorial_1keyboard.outb
+
 # void go_0kernel.Halt()
 .global go_0kernel.Halt
 .type   go_0kernel.Halt, @function

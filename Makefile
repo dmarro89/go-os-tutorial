@@ -24,15 +24,19 @@ BOOT_SRCS      := $(wildcard boot/*.s)
 LINKER_SCRIPT  := boot/linker.ld
 
 MODPATH      := github.com/dmarro89/go-os-tutorial
+KEYBOARD_IMPORT := $(MODPATH)/keyboard
 SHELL_IMPORT := $(MODPATH)/shell
 
+KEYBOARD_SRCS := $(filter-out %_test.go, $(wildcard keyboard/*.go))
 KERNEL_SRCS := $(filter-out %_test.go, $(wildcard kernel/*.go))
 SHELL_SRCS  := $(filter-out %_test.go, $(wildcard shell/*.go))
 
-BOOT_OBJ   := $(BUILD_DIR)/boot.o
-SHELL_OBJ  := $(BUILD_DIR)/shell.o
-SHELL_GOX  := $(BUILD_DIR)/github.com/dmarro89/go-os-tutorial/shell.gox
-KERNEL_OBJ := $(BUILD_DIR)/kernel.o
+BOOT_OBJ     := $(BUILD_DIR)/boot.o
+KEYBOARD_OBJ := $(BUILD_DIR)/keyboard.o
+KEYBOARD_GOX := $(BUILD_DIR)/github.com/dmarro89/go-os-tutorial/keyboard.gox
+SHELL_OBJ    := $(BUILD_DIR)/shell.o
+SHELL_GOX    := $(BUILD_DIR)/github.com/dmarro89/go-os-tutorial/shell.gox
+KERNEL_OBJ   := $(BUILD_DIR)/kernel.o
 
 .PHONY: all kernel iso run clean docker-build docker-image docker-shell docker-run docker-build-only
 
@@ -57,7 +61,17 @@ $(BUILD_DIR):
 $(BOOT_OBJ): $(BOOT_SRCS) | $(BUILD_DIR)
 	$(AS) $(BOOT_SRCS) -o $(BOOT_OBJ)
 
-$(SHELL_OBJ): $(SHELL_SRCS) | $(BUILD_DIR)
+$(KEYBOARD_OBJ): $(KEYBOARD_SRCS) | $(BUILD_DIR)
+	$(GCCGO) $(GCCGOFLAGS) -static -Werror -nostdlib -nostartfiles -nodefaultlibs \
+		-I $(BUILD_DIR) \
+		-fgo-pkgpath=$(KEYBOARD_IMPORT) \
+		-c $(KEYBOARD_SRCS) -o $(KEYBOARD_OBJ)
+
+$(KEYBOARD_GOX): $(KEYBOARD_OBJ) | $(BUILD_DIR)
+	mkdir -p $(dir $(KEYBOARD_GOX))
+	$(OBJCOPY) -j .go_export $(KEYBOARD_OBJ) $(KEYBOARD_GOX)
+
+$(SHELL_OBJ): $(SHELL_SRCS) $(KEYBOARD_GOX) | $(BUILD_DIR)
 	$(GCCGO) $(GCCGOFLAGS) -static -Werror -nostdlib -nostartfiles -nodefaultlibs \
 		-I $(BUILD_DIR) \
 		-fgo-pkgpath=$(SHELL_IMPORT) \
@@ -72,10 +86,10 @@ $(KERNEL_OBJ): $(KERNEL_SRCS) $(SHELL_GOX) | $(BUILD_DIR)
 		-I $(BUILD_DIR) \
 		-c $(KERNEL_SRCS) -o $(KERNEL_OBJ)
 
-$(KERNEL_ELF): $(BOOT_OBJ) $(SHELL_OBJ) $(KERNEL_OBJ) $(LINKER_SCRIPT)
+$(KERNEL_ELF): $(BOOT_OBJ) $(KEYBOARD_OBJ) $(SHELL_OBJ) $(KERNEL_OBJ) $(LINKER_SCRIPT)
 	$(GCC) -T $(LINKER_SCRIPT) -o $(KERNEL_ELF) \
 		-ffreestanding -O2 -nostdlib \
-		$(BOOT_OBJ) $(SHELL_OBJ) $(KERNEL_OBJ) -lgcc
+		$(BOOT_OBJ) $(KEYBOARD_OBJ) $(SHELL_OBJ) $(KERNEL_OBJ) -lgcc
 
 $(ISO_DIR)/boot/grub:
 	mkdir -p $(ISO_DIR)/boot/grub
